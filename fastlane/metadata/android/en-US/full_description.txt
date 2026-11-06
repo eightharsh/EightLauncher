@@ -1,0 +1,5 @@
+eight is a minimalist Android launcher maintained by eightharsh.
+
+Customize your home screen with favorite apps, a clock, date, and widgets. Find apps with search, manage hidden apps and supported work/private profiles, and view locally recorded screen time. Optional app-opening countdowns help you pause before opening distracting apps.
+
+Includes downloadable fonts, with no analytics, remote crash reporting, or push messaging. Optional accessibility access enables double-tap to lock.

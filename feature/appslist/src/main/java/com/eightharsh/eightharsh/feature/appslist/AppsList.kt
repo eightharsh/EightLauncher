@@ -1,0 +1,85 @@
+package com.eightharsh.eightharsh.feature.appslist
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.eightharsh.eightharsh.core.common.DefaultSettings
+import com.eightharsh.eightharsh.core.model.InstalledApp
+import com.eightharsh.eightharsh.core.ui.DefaultSettingsUi
+import com.eightharsh.eightharsh.core.ui.composables.HomeScreenItem
+
+/**
+ * Main App List composable - focuses purely on the list of apps
+ */
+@Composable
+fun AppsList(
+    modifier: Modifier = Modifier,
+    scrollState: LazyListState,
+    padding: PaddingValues = PaddingValues(),
+    onAppOpened: (app: InstalledApp) -> Unit = {},
+    onAppLongClick: (app: InstalledApp) -> Unit = {},
+    appsListViewModel: AppsListViewModel = hiltViewModel(),
+) {
+    val showScreenTimeApp by appsListViewModel.showScreenTimeApp.collectAsState(initial = DefaultSettings.SHOW_SCREEN_TIME_APP)
+    val appsListAlignment by appsListViewModel.appsAlignment.collectAsState(initial = DefaultSettingsUi.APPS_ALIGNMENT)
+    val showWallpaper by appsListViewModel.showWallpaper.collectAsState(initial = false)
+    val appListItems by appsListViewModel.appListItems.collectAsState()
+
+    Box(
+        modifier
+            .fillMaxSize()
+            .imePadding()
+    ) {
+        // The main column with all the items in
+        LazyColumn(
+            state = scrollState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 30.dp),
+            horizontalAlignment = appsListAlignment,
+            verticalArrangement = Arrangement.Top
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            items(appListItems, key = { item -> item.app.packageName }) { item ->
+                HomeScreenItem(
+                    appName = item.app.displayName,
+                    screenTime = item.formattedTime,
+                    onAppClick = { onAppOpened(item.app) },
+                    onAppLongClick = { onAppLongClick(item.app) },
+                    showScreenTime = showScreenTimeApp,
+                    modifier = Modifier,
+                    alignment = appsListAlignment,
+                    shadow = showWallpaper,
+                    color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary,
+                    screenTimeColor = if (showWallpaper) MaterialTheme.colorScheme.secondaryFixed else MaterialTheme.colorScheme.primary,
+                    screenTimeAlpha = if (showWallpaper) 1f else 0.5f
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(padding.calculateBottomPadding()))
+            }
+        }
+    }
+}

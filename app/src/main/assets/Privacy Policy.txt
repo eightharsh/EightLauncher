@@ -1,0 +1,16 @@
+eight privacy information
+Maintainer: eightharsh
+
+This launcher contains no analytics SDK, remote crash reporter, performance-monitoring SDK, Firebase integration, or push messaging service.
+
+Settings, favorite/hidden app choices, and launcher-recorded screen-time sessions are stored locally. Screen-time records reflect sessions initiated through the launcher, rather than a full system-wide usage audit. Android may include app data in backups according to device settings and the app backup rules. Uninstalling removes local app data; platform backups are managed separately.
+
+Downloadable Google Fonts use the Google Play Services font provider; bundled fonts do not require a download. Google Play Services operates under their own privacy policies.
+
+The launcher queries installed apps to display and open them. Work and Private Space integration uses Android profile APIs. Optional accessibility access performs the screen-lock action for double-tap to lock; the service does not process accessibility event contents.
+
+Widgets and apps opened through the launcher operate independently and may access the network or collect data under their own policies.
+
+Quick notes, checklist state, and reminder times are stored in the app's local preferences. Optional reminders use Android WorkManager and local notifications, not a cloud service. Completing or deleting a task cancels its pending reminder. Battery restrictions can delay notifications.
+
+Backups are exported only to a file you select through Android's file picker. They contain settings, app customization choices, and notes in plain text. Restoring a backup replaces the supported preferences and notes after confirmation.

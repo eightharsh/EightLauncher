@@ -1,0 +1,462 @@
+package com.eightharsh.eightharsh.feature.settings.mainpage
+
+import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.eightharsh.eightharsh.core.common.configureStatusBar
+import com.eightharsh.eightharsh.core.navigation.AppNavKey
+import com.eightharsh.eightharsh.core.ui.R
+import com.eightharsh.eightharsh.core.ui.composables.EscapeHeader
+import com.eightharsh.eightharsh.core.ui.composables.EscapeSubhead
+import com.eightharsh.eightharsh.core.ui.composables.FooterBox
+import com.eightharsh.eightharsh.core.ui.composables.NotDefaultLauncher
+import com.eightharsh.eightharsh.core.ui.composables.SettingsNavigationItem
+import com.eightharsh.eightharsh.core.ui.composables.SettingsSingleChoiceSegmentedButtons
+import com.eightharsh.eightharsh.core.ui.composables.SettingsSmallSpacer
+import com.eightharsh.eightharsh.core.ui.composables.SettingsSpacer
+import com.eightharsh.eightharsh.core.ui.composables.SettingsSwitch
+
+/**
+ * Fist page of settings, contains navigation to all the other pages
+ *
+ * @param goBack When back button is pressed
+ * @param onNavigate Callback to navigate to a settings sub-page
+ *
+ * @see Settings
+ */
+@Composable
+fun MainSettingsPage(
+    goBack: () -> Unit,
+    onNavigate: (AppNavKey) -> Unit,
+    mainSettingsPageViewModel: MainSettingsPageViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val activity = LocalActivity.current
+    val view = LocalView.current
+
+    val uiState by mainSettingsPageViewModel.uiState.collectAsState()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                mainSettingsPageViewModel.updateLauncherStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // To show the default launcher prompt, the activity must be started for a result so this is required instead of Context.startActivity
+    val roleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        mainSettingsPageViewModel.updateLauncherStatus()
+    }
+
+    val isDefaultLauncher by mainSettingsPageViewModel.isDefaultLauncher.collectAsState()
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        LazyColumn(
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+        ) {
+            item(key = "header") {
+                EscapeHeader(
+                    goBack, stringResource(R.string.settings)
+                )
+            }
+
+            item(key = "not_default_launcher") {
+                AnimatedVisibility(!isDefaultLauncher, enter = fadeIn(), exit = fadeOut()) {
+                    NotDefaultLauncher {
+                        val intent = mainSettingsPageViewModel.getPromptDefaultLauncherIntent()
+                        roleLauncher.launch(intent)
+                    }
+                }
+            }
+
+            //General
+            item(key = "general_subhead") { EscapeSubhead(stringResource(id = R.string.general)) }
+
+            item(key = "theme") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.theme),
+                    false,
+                    isTopOfGroup = true,
+                    onClick = { onNavigate(AppNavKey.Settings.Theme) })
+            }
+
+            item(key = "font") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.choose_font),
+                    false,
+                    onClick = { onNavigate(AppNavKey.Settings.ChooseFont) })
+            }
+
+            item(key = "show_status_bar") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.show_status_bar),
+                    checked = uiState.showStatusBar,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowStatusBar(it)
+                        activity?.window?.configureStatusBar(hide = !it)
+                    })
+            }
+
+            item(key = "haptic") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.haptic_feedback),
+                    isBottomOfGroup = true,
+                    checked = uiState.hapticFeedBackEnabled,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setHapticFeedback(it)
+                        view.isHapticFeedbackEnabled = it
+                    })
+            }
+
+            // Home options
+            item(key = "home_options_subhead") { EscapeSubhead(stringResource(R.string.home)) }
+
+            item(key = "show_clock") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.show_clock),
+                    checked = uiState.showClock,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowClock(it)
+                    },
+                    isTopOfGroup = true
+                )
+            }
+
+            item(key = "12h_clock") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.twelve_hour_clock_setting),
+                    checked = uiState.twelveHourClock,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setTwelveHourClock(it)
+                    })
+            }
+
+            item(key = "big_clock") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.big_clock),
+                    checked = uiState.bigClock,
+                    isBottomOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setBigClock(it)
+                    })
+            }
+
+            item(key = "clock_group_spacer") {
+                SettingsSmallSpacer()
+            }
+
+            item(key = "show_date") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.date),
+                    checked = uiState.showDate,
+                    isTopOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowDate(it)
+                    })
+            }
+
+            item(key = "screen_time_home") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.screen_time_on_home_screen),
+                    checked = uiState.showScreenTimeHome,
+                    isBottomOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowScreenTimeHome(it)
+                    })
+            }
+
+            item(key = "date_group_spacer") {
+                SettingsSmallSpacer()
+            }
+
+            item(key = "widget") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.widget),
+                    false,
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(AppNavKey.Settings.Widget) })
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                item(key = "double_tap_to_lock_top_spacer") {
+                    SettingsSmallSpacer()
+                }
+
+                item(key = "double_tap_to_lock") {
+                    SettingsSwitch(
+                        label = stringResource(id = R.string.double_tap_to_lock),
+                        checked = uiState.doubleTapToLock,
+                        onCheckedChange = {
+                            mainSettingsPageViewModel.setDoubleTapToLock(it)
+                        },
+                        isTopOfGroup = true,
+                        isBottomOfGroup = uiState.isAccessibilityServiceEnabled
+                    )
+                }
+
+                if (!uiState.isAccessibilityServiceEnabled) {
+                    item(key = "enable_accessibility") {
+                        SettingsNavigationItem(
+                            label = stringResource(R.string.enable_accessibility),
+                            isBottomOfGroup = true,
+                            diagonalArrow = true,
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            })
+                    }
+                }
+            }
+
+
+            //Alignment Options
+            item(key = "alignment_subhead") { EscapeSubhead(stringResource(R.string.alignments)) }
+
+            item(key = "home_alignment") {
+                val homeHorizontalOptions = listOf(
+                    stringResource(R.string.left),
+                    stringResource(R.string.center),
+                    stringResource(R.string.right)
+                )
+
+                SettingsSingleChoiceSegmentedButtons(
+                    label = stringResource(id = R.string.home),
+                    options = homeHorizontalOptions,
+                    selectedIndex = uiState.homeAlignment,
+                    onSelectedIndexChange = { newIndex ->
+                        mainSettingsPageViewModel.setHomeAlignment(newIndex)
+                    },
+                    isTopOfGroup = true
+                )
+            }
+
+            item(key = "home_v_alignment") {
+                val homeVerticalOptions = listOf(
+                    stringResource(R.string.top),
+                    stringResource(R.string.center),
+                    stringResource(R.string.bottom)
+                )
+
+                SettingsSingleChoiceSegmentedButtons(
+                    label = " ",
+                    options = homeVerticalOptions,
+                    selectedIndex = uiState.homeVAlignment,
+                    onSelectedIndexChange = { newIndex ->
+                        mainSettingsPageViewModel.setHomeVAlignment(newIndex)
+                    },
+                    isBottomOfGroup = true
+                )
+            }
+
+            item(key = "alignments_spacer") {
+                SettingsSmallSpacer()
+            }
+
+            item(key = "apps_alignment") {
+                val appsAlignmentOptions = listOf(
+                    stringResource(R.string.left),
+                    stringResource(R.string.center),
+                    stringResource(R.string.right)
+                )
+
+                SettingsSingleChoiceSegmentedButtons(
+                    label = stringResource(id = R.string.apps),
+                    options = appsAlignmentOptions,
+                    selectedIndex = uiState.appsAlignment,
+                    onSelectedIndexChange = { newIndex ->
+                        mainSettingsPageViewModel.setAppsAlignment(newIndex)
+                    },
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true
+                )
+            }
+
+            item(key = "personal-settings") { PersonalSettings() }
+            item(key = "backup-settings") { BackupSettings() }
+            item(key = "personal-spacer") { SettingsSmallSpacer() }
+
+            // Search settings
+            item(key = "search_subhead") { EscapeSubhead(stringResource(R.string.search)) }
+
+            item(key = "show_search_box") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.search_box),
+                    checked = uiState.showSearchBox,
+                    isTopOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowSearchBox(it)
+                    })
+            }
+
+            item(key = "auto_open_search") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.auto_open),
+                    checked = uiState.automaticallyOpenAppsInSearch,
+                    isBottomOfGroup = false,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setAutomaticallyOpenAppsInSearch(it)
+                    })
+            }
+
+            item(key = "apps_list_auto_search") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.apps_list_auto_search),
+                    checked = uiState.searchAutoOpen,
+                    isBottomOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setSearchAutoOpen(it)
+                    })
+            }
+
+            //Screen time
+            item(key = "screen_time_subhead") { EscapeSubhead(stringResource(R.string.screen_time)) }
+
+            item(key = "screen_time_app") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.screen_time_on_app),
+                    checked = uiState.showScreenTimeApp,
+                    isTopOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setShowScreenTimeApp(it)
+                    })
+            }
+
+            item(key = "hide_screen_time_page") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.hide_screen_time_page),
+                    checked = uiState.hideScreenTimePage,
+                    isBottomOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setHideScreenTimePage(it)
+                    })
+            }
+
+            //Apps
+            item(key = "apps_subhead") {
+                EscapeSubhead(
+                    stringResource(R.string.apps)
+                )
+            }
+
+            item(key = "manage_fav_apps") {
+                SettingsNavigationItem(
+                    stringResource(R.string.manage_favourite_apps),
+                    diagonalArrow = false,
+                    isTopOfGroup = true,
+                    onClick = {
+                        onNavigate(AppNavKey.Settings.BulkFavouriteApps)
+                    })
+            }
+
+            item(key = "manage_hidden_apps") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.manage_hidden_apps),
+                    false,
+                    onClick = { onNavigate(AppNavKey.Settings.HiddenApps) })
+            }
+
+            item(key = "manage_open_challenges") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.manage_open_challenges),
+                    false,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(AppNavKey.Settings.OpenChallenges) })
+            }
+
+            //Other
+            item(key = "other_subhead") { EscapeSubhead(stringResource(id = R.string.other)) }
+
+            item(key = "make_default_launcher") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.make_default_launcher),
+                    true,
+                    isTopOfGroup = true,
+                    onClick = {
+                        val intent = mainSettingsPageViewModel.getPromptDefaultLauncherIntent()
+                        roleLauncher.launch(intent)
+                    })
+            }
+
+
+            item(key = "font_licences") {
+                SettingsNavigationItem(
+                    label = stringResource(R.string.font_licences),
+                    diagonalArrow = false,
+                    isBottomOfGroup = false,
+                    onClick = { onNavigate(AppNavKey.Settings.FontLicences) })
+            }
+
+            item(key = "privacy_policy") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.read_privacy_policy),
+                    diagonalArrow = false,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(AppNavKey.Settings.PrivacyPolicy) })
+            }
+
+            item(key = "spacer1") { SettingsSpacer() }
+
+            item(key = "footer") {
+                FooterBox(
+                    text = "eightharsh",
+                    secondText = "eightharsh.com",
+                    onBackgroundClick = {
+                        onNavigate(AppNavKey.Settings.DevOptions)
+                    })
+            }
+
+            item(key = "spacer2") { SettingsSpacer() }
+            item(key = "spacer3") { SettingsSpacer() }
+        }
+
+    }
+}

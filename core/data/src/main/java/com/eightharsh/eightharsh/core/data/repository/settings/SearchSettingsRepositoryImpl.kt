@@ -1,0 +1,32 @@
+package com.eightharsh.eightharsh.core.data.repository.settings
+
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import com.eightharsh.eightharsh.core.common.DefaultSettings
+import com.eightharsh.eightharsh.core.data.datastore.PreferencesKeys
+import com.eightharsh.eightharsh.core.domain.repository.settings.SearchSettingsRepository
+import jakarta.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+class SearchSettingsRepositoryImpl @Inject constructor(
+    private val dataStore: DataStore<Preferences>
+) : SearchSettingsRepository {
+    override val showSearchBox: Flow<Boolean> = dataStore.data.map { it[PreferencesKeys.SHOW_SEARCH_BOX] ?: DefaultSettings.SHOW_SEARCH_BOX }
+    override suspend fun setShowSearchBox(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.SHOW_SEARCH_BOX] = enabled }
+    }
+    override val searchAutoOpen: Flow<Boolean> = dataStore.data.map { it[PreferencesKeys.SEARCH_AUTO_OPEN] ?: DefaultSettings.SEARCH_AUTO_OPEN }
+    override suspend fun setSearchAutoOpen(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.SEARCH_AUTO_OPEN] = enabled }
+    }
+    override val automaticallyOpenAppsInSearch: Flow<Boolean> = dataStore.data.map { it[PreferencesKeys.AUTOMATICALLY_OPEN_APPS_IN_SEARCH] ?: DefaultSettings.AUTOMATICALLY_OPEN_APPS_IN_SEARCH }
+    override suspend fun setAutomaticallyOpenAppsInSearch(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.AUTOMATICALLY_OPEN_APPS_IN_SEARCH] = enabled }
+    }
+    override val showHiddenAppsInSearch: Flow<Boolean> = dataStore.data.map { it[PreferencesKeys.SHOW_HIDDEN_APPS_IN_SEARCH] ?: DefaultSettings.SHOW_HIDDEN_APPS_IN_SEARCH }
+    override suspend fun setShowHiddenAppsInSearch(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.SHOW_HIDDEN_APPS_IN_SEARCH] = enabled }
+    }
+}

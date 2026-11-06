@@ -1,0 +1,82 @@
+package com.eightharsh.eightharsh.core.ui.composables
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.eightharsh.eightharsh.core.ui.utils.escapeShadow
+
+
+/**
+ * An item displayed on the HomeScreen or Apps list
+ *
+ * If [showScreenTime] is enabled and [screenTime] is not null the screen time is written next to the app name.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HomeScreenItem(
+    modifier: Modifier = Modifier,
+    appName: String,
+    screenTime: String? = null,
+    onAppClick: () -> Unit,
+    onAppLongClick: () -> Unit,
+    showScreenTime: Boolean = false,
+    alignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    color: Color = MaterialTheme.colorScheme.primary,
+    screenTimeColor: Color = MaterialTheme.colorScheme.secondary,
+    screenTimeAlpha: Float = 0.5f,
+    shadow: Boolean = false
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = when (alignment) {
+            Alignment.Start -> Arrangement.Start
+            Alignment.CenterHorizontally -> Arrangement.Center
+            Alignment.End -> Arrangement.End
+            else -> Arrangement.Center
+        }, modifier = modifier
+            .combinedClickable(
+                onClick = onAppClick, onLongClick = onAppLongClick
+            )
+            .fillMaxWidth()
+    ) {
+        // App name text with click and long click handlers
+        Text(
+            appName,
+            modifier = Modifier.padding(vertical = 15.dp),
+            color = color,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                shadow = escapeShadow(
+                    MaterialTheme.colorScheme.scrim,
+                    shadow
+                )
+            ),
+        )
+
+        // Optional screen time
+        if (showScreenTime && screenTime != null && screenTime != "0s") {
+            Text(
+                screenTime,
+                modifier = Modifier
+                    .padding(vertical = 15.dp, horizontal = 5.dp)
+                    .alpha(screenTimeAlpha),
+                color = screenTimeColor,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    shadow = escapeShadow(
+                        MaterialTheme.colorScheme.scrim,
+                        shadow
+                    )
+                )
+            )
+        }
+    }
+}

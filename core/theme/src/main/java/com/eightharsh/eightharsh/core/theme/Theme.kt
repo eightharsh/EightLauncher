@@ -1,0 +1,109 @@
+package com.eightharsh.eightharsh.core.theme
+
+import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontFamily
+import androidx.core.view.WindowCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.eightharsh.eightharsh.core.theme.colours.AppColourScheme
+import com.eightharsh.eightharsh.core.theme.colours.darkSchemeEscapeTheme
+import com.eightharsh.eightharsh.core.theme.colours.resolveColorScheme
+import com.eightharsh.eightharsh.core.theme.type.escapeType
+import com.eightharsh.eightharsh.core.theme.type.getFontFamily
+
+val LocalSearchPillColors = staticCompositionLocalOf<Pair<Color, Color>?> { null }
+
+@Composable
+fun EscapeTheme(
+    theme: AppColourScheme? = null,
+    fontName: String? = null,
+    themeViewModel: ThemeViewModel = hiltViewModel(),
+    content: @Composable (() -> Unit)
+) {
+    val context = LocalContext.current
+    val colorScheme by themeViewModel.theme.collectAsState(AppColourScheme.ESCAPE_THEME)
+    val blackBackground by themeViewModel.blackBackground.collectAsState(initial = false)
+    val nightMode by themeViewModel.nightMode.collectAsState(initial = 0)
+    val font by themeViewModel.font.collectAsState("Outfit") // Must match DefaultSettings.FONT
+
+    val fontFamily = if(font != "System") {
+        remember(fontName, font) {
+            getFontFamily(
+                context = context,
+                fontName = fontName ?: font
+            )
+        }
+    }
+    else {
+        FontFamily.Default
+    }
+    val typography = remember(fontFamily) { escapeType(fontFamily) }
+
+    // Generating a scheme from a seed walks ~50 HCT colours; only redo it when the input changes
+    val selectedScheme = theme ?: colorScheme
+    val isDark = isSystemInDarkTheme()
+    val resolvedColorScheme = remember(selectedScheme, isDark, blackBackground, nightMode) {
+        val shouldBeDark = when(nightMode) {
+            0 -> isDark
+            1 -> true
+            2 -> false
+            else -> isDark
+        }
+
+        val scheme = selectedScheme.resolveColorScheme(context, shouldBeDark || blackBackground)
+        if (blackBackground) {
+            scheme.copy(
+                background = Color.Black,
+                surface = Color.Black,
+            )
+        } else if (shouldBeDark) {
+            val charcoal = Color(0xFF242628)
+            scheme.copy(background = charcoal, surface = charcoal, surfaceDim = charcoal)
+        } else {
+            scheme
+        }
+    }
+
+
+    // Keep status bar icons readable against the themed background (dark icons on a light surface)
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        val lightStatusBarIcons = resolvedColorScheme.surface.luminance() > 0.5f
+        SideEffect {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                lightStatusBarIcons
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalSearchPillColors provides when (selectedScheme) {
+            AppColourScheme.CHARCOAL_LINEN -> resolvedColorScheme.surfaceContainerHighest to resolvedColorScheme.onSurface
+            AppColourScheme.PAPER_INK -> resolvedColorScheme.secondary to resolvedColorScheme.onSecondary
+            else -> null
+        }
+    ) {
+        MaterialTheme(colorScheme = resolvedColorScheme, typography = typography, content = content)
+    }
+}
+
+@Composable
+fun EscapeThemePreview(content: @Composable (() -> Unit)) {
+    MaterialTheme(
+        colorScheme = darkSchemeEscapeTheme,
+        typography = escapeType(FontFamily.Default),
+        content = content
+    )
+}

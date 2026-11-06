@@ -1,0 +1,57 @@
+package com.eightharsh.eightharsh.core.data.datastore
+
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+
+object PreferencesKeys {
+    val HAPTIC_FEEDBACK = booleanPreferencesKey(name = "haptic_feedback")
+
+    //Private Space
+    val HIDE_PRIVATE_SPACE = booleanPreferencesKey(name = "hidden_private_space")
+    //Home Screen
+    val TWELVE_HOUR_CLOCK = booleanPreferencesKey(name = "twelve_hour_clock")
+    val SHOW_CLOCK = booleanPreferencesKey(name = "show_clock")
+    val BIG_CLOCK = booleanPreferencesKey(name = "big_clock")
+    val SHOW_DATE = booleanPreferencesKey(name = "show_date")
+    val SHOW_STATUS_BAR = booleanPreferencesKey(name = "show_status_bar")
+    val SHOW_SCREEN_TIME_HOME = booleanPreferencesKey(name = "show_screen_time_home")
+    val SHOW_SCREEN_TIME_APP = booleanPreferencesKey(name = "show_screen_time_app")
+    val FIRST_TIME_HELP = booleanPreferencesKey(name = "first_time_help")
+    val HOME_V_ALIGNMENT = stringPreferencesKey(name = "home_v_alignment")
+    val HOME_ALIGNMENT = stringPreferencesKey(name = "home_alignment")
+
+
+    //Apps List
+    val APPS_ALIGNMENT = stringPreferencesKey(name = "apps_alignment")
+
+    //Widget
+    val WIDGET_OFFSET = floatPreferencesKey(name = "widget_offset")
+    val WIDGET_HEIGHT = floatPreferencesKey(name = "widget_height")
+    val WIDGET_WIDTH = floatPreferencesKey(name = "widget_width")
+    val WIDGET_ID = intPreferencesKey(name = "widget_ID")
+
+    //Theme
+    val THEME = intPreferencesKey(name = "theme")
+    val SHOW_WALLPAPER = booleanPreferencesKey(name = "show_wallpaper")
+    val BLACK_BACKGROUND = booleanPreferencesKey(name = "black_background")
+    val FONT = stringPreferencesKey(name = "font")
+    val NIGHT_MODE = intPreferencesKey(name = "night_mode")
+
+    //Search
+    val SHOW_SEARCH_BOX = booleanPreferencesKey(name = "show_search_box")
+    val SEARCH_AUTO_OPEN = booleanPreferencesKey(name = "search_auto_open")
+    val AUTOMATICALLY_OPEN_APPS_IN_SEARCH = booleanPreferencesKey(name = "automatically_open_apps_in_search")
+
+    //Misc
+    val DOUBLE_TAP_TO_LOCK = booleanPreferencesKey(name = "double_tap_to_lock")
+    val HIDE_SCREEN_TIME_PAGE = booleanPreferencesKey(name = "hide_screen_time_page")
+    val SHOW_HIDDEN_APPS_IN_SEARCH = booleanPreferencesKey(name = "show_hidden_apps_in_search")
+    val FIRST_TIME = booleanPreferencesKey(name = "first_time")
+
+    //Screen Time
+    val ACTIVE_SESSION_PACKAGE = stringPreferencesKey("active_session_package")
+    val ACTIVE_SESSION_START_TIME = longPreferencesKey("active_session_start_time")
+}

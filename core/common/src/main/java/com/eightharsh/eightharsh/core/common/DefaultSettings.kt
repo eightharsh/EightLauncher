@@ -1,0 +1,59 @@
+package com.eightharsh.eightharsh.core.common
+
+object DefaultSettings {
+    const val HAPTIC_FEEDBACK = true
+
+    // Private Space
+    const val HIDE_PRIVATE_SPACE = false
+
+    // Home Screen
+    const val TWELVE_HOUR_CLOCK = false
+    const val SHOW_CLOCK = true
+    const val BIG_CLOCK = false
+    const val SHOW_DATE = true
+    const val SHOW_STATUS_BAR = true
+    const val SHOW_SCREEN_TIME_HOME = true
+    const val SHOW_SCREEN_TIME_APP = true
+    const val FIRST_TIME_HELP = true
+    const val HOME_V_ALIGNMENT = "Center"
+    const val HOME_ALIGNMENT = "Left"
+
+    // Alignment Indices
+    const val ALIGNMENT_LEFT_INDEX = 0
+    const val ALIGNMENT_CENTER_INDEX = 1
+    const val ALIGNMENT_RIGHT_INDEX = 2
+
+    const val ALIGNMENT_TOP_INDEX = 0
+    const val ALIGNMENT_BOTTOM_INDEX = 2
+
+
+    // Apps List
+    const val APPS_ALIGNMENT = "Left"
+
+    // Widget
+    const val WIDGET_OFFSET = 0f
+    const val WIDGET_HEIGHT = 125f
+    const val WIDGET_WIDTH = 250f
+    const val WIDGET_ID = -1
+
+    // Theme
+    const val THEME = 13
+    const val SHOW_WALLPAPER = false
+    const val BLACK_BACKGROUND = false
+    const val FONT = "Outfit"
+    const val NIGHT_MODE_SYNC = 0
+    const val NIGHT_MODE_DARK = 1
+    const val NIGHT_MODE_LIGHT = 2
+    const val NIGHT_MODE = NIGHT_MODE_SYNC
+
+    // Search
+    const val SHOW_SEARCH_BOX = true
+    const val SEARCH_AUTO_OPEN = false
+    const val AUTOMATICALLY_OPEN_APPS_IN_SEARCH = false
+
+    // Misc
+    const val DOUBLE_TAP_TO_LOCK = true
+    const val HIDE_SCREEN_TIME_PAGE = false
+    const val SHOW_HIDDEN_APPS_IN_SEARCH = false
+    const val FIRST_TIME = true
+}

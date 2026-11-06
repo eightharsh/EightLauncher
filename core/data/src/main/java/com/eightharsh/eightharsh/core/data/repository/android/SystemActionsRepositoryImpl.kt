@@ -1,0 +1,196 @@
+package com.eightharsh.eightharsh.core.data.repository.android
+
+import android.Manifest
+import android.app.ActivityOptions
+import android.app.WallpaperManager
+import android.app.role.RoleManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.os.Build
+import android.provider.Settings
+import android.util.Log
+import androidx.annotation.RequiresPermission
+import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
+import com.eightharsh.eightharsh.core.data.system.AccessibilityEventManager
+import com.eightharsh.eightharsh.core.domain.repository.android.SystemActionsRepository
+import com.eightharsh.eightharsh.core.model.InstalledApp
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import java.io.File
+import java.io.FileOutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SystemActionsRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : SystemActionsRepository {
+    override val isAccessibilityServiceEnabled: Flow<Boolean> =
+        AccessibilityEventManager.isServiceConnected
+
+    override fun uninstallApp(app: InstalledApp) {
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = "package:${app.packageName}".toUri()
+            putExtra(Intent.EXTRA_USER, app.user)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
+
+    override fun openAppDetails(app: InstalledApp, sourceBounds: Rect?) {
+        val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps ?: return
+        val options = ActivityOptions.makeBasic()
+        if (sourceBounds != null) {
+            options.launchBounds = sourceBounds
+        }
+        launcherApps.startAppDetailsActivity(
+            app.componentName,
+            app.user,
+            sourceBounds,
+            options.toBundle()
+        )
+    }
+
+    override fun isDefaultLauncher(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(RoleManager::class.java)
+            roleManager?.isRoleHeld(RoleManager.ROLE_HOME) == true
+        } else {
+            val packageManager = context.packageManager
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+            }
+            val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            resolveInfo?.activityInfo?.packageName == context.packageName
+        }
+    }
+
+    override fun getPromptDefaultLauncherIntent(): Intent {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(RoleManager::class.java)
+
+            if (roleManager != null) {
+                // If we are already default
+                if (roleManager.isRoleHeld(RoleManager.ROLE_HOME)) {
+                    return Intent(Settings.ACTION_HOME_SETTINGS)
+                }
+
+                // If we aren't default
+                if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                    return roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
+                }
+            }
+        }
+
+        // Fallback to full settings page
+        return Intent(Settings.ACTION_HOME_SETTINGS)
+    }
+
+    @RequiresPermission(Manifest.permission.SET_WALLPAPER)
+    override fun setSolidColorWallpaper(color: Int) {
+        val wallpaperManager = WallpaperManager.getInstance(context)
+
+        val displayMetrics = context.resources.displayMetrics
+        val width = displayMetrics.widthPixels
+        val height = displayMetrics.heightPixels
+
+        val bitmap = createBitmap(width, height)
+        val canvas = Canvas(bitmap)
+        val paint = Paint().apply {
+            this.color = color
+            style = Paint.Style.FILL
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+        try {
+            val cachePath = File(context.cacheDir, "images")
+            cachePath.mkdirs()
+            val file = File(cachePath, "solid_color_wallpaper.png")
+            val stream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.close()
+
+            val imageUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+
+            val intent = wallpaperManager.getCropAndSetWallpaperIntent(imageUri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(intent)
+
+        } catch (_: IllegalArgumentException) {
+            try {
+                val cachePath = File(context.cacheDir, "images")
+                val file = File(cachePath, "solid_color_wallpaper.png")
+                val imageUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+
+                val fallbackIntent = Intent(Intent.ACTION_ATTACH_DATA).apply {
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                    setDataAndType(imageUri, "image/*")
+                    putExtra("mimeType", "image/*")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(Intent.createChooser(fallbackIntent, "Set Wallpaper As:"))
+            } catch (fallbackEx: Exception) {
+                fallbackEx.printStackTrace()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun lockScreen() {
+        AccessibilityEventManager.triggerLockScreen()
+    }
+
+    override fun launchApp(app: InstalledApp) {
+        val options = ActivityOptions.makeBasic()
+
+        try {
+            val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
+            if (launcherApps != null) {
+                launcherApps.startMainActivity(
+                    app.componentName,
+                    app.user,
+                    Rect(),
+                    options.toBundle()
+                )
+            } else {
+                throw SecurityException("LauncherApps service is unavailable")
+            }
+        } catch (e: SecurityException) {
+            Log.e("SystemActionsRepo", "SecurityException opening app: ${e.message}")
+            if (app.user != android.os.Process.myUserHandle()) {
+                throw e
+            }
+            try {
+                val intent = context.packageManager.getLaunchIntentForPackage(app.packageName)
+                intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (intent != null) {
+                    context.startActivity(intent)
+                } else {
+                    throw Exception("Launch intent not found for fallback launch of ${app.packageName}", e)
+                }
+            } catch (fallbackException: Exception) {
+                Log.e("SystemActionsRepo", "Failed to launch app even with fallback", fallbackException)
+                throw fallbackException
+            }
+        } catch (e: Exception) {
+            Log.e("SystemActionsRepo", "Error opening app", e)
+            throw e
+        }
+    }
+}

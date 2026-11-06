@@ -1,0 +1,73 @@
+package com.eightharsh.eightharsh.feature.onboarding
+
+import android.content.Intent
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eightharsh.eightharsh.core.domain.launcher.GetIsDefaultLauncherUseCase
+import com.eightharsh.eightharsh.core.domain.launcher.SetDefaultLauncherUseCase
+import com.eightharsh.eightharsh.core.domain.onboarding.GetOnboardingScreenUseCase
+import com.eightharsh.eightharsh.core.domain.repository.settings.OnboardingRepository
+import com.eightharsh.eightharsh.core.domain.repository.settings.LauncherBehaviorRepository
+import com.eightharsh.eightharsh.core.navigation.AppNavKey
+import com.eightharsh.eightharsh.core.navigation.NavRouter
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
+    private val onboardingRepository: OnboardingRepository,
+    launcherBehaviorRepository: LauncherBehaviorRepository,
+    getOnboardingScreensUseCase: GetOnboardingScreenUseCase,
+    private val getIsDefaultLauncherUseCase: GetIsDefaultLauncherUseCase,
+    private val setDefaultLauncherUseCase: SetDefaultLauncherUseCase,
+    private val savedStateHandle: SavedStateHandle,
+    val navRouter: NavRouter
+) : ViewModel() {
+    val screens = getOnboardingScreensUseCase()
+
+    private val _isDefaultLauncher = MutableStateFlow(false)
+    val isDefaultLauncher: StateFlow<Boolean> = _isDefaultLauncher.asStateFlow()
+
+    fun updateLauncherStatus() {
+        _isDefaultLauncher.value = getIsDefaultLauncherUseCase()
+    }
+
+    fun getPromptDefaultLauncherIntent(): Intent {
+        return setDefaultLauncherUseCase()
+    }
+
+    init {
+        updateLauncherStatus()
+    }
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            // The caller immediately pops this nav entry, which clears this ViewModel and cancels
+            // viewModelScope. Make sure the DataStore write still completes or the user would be
+            // shown onboarding again on the next launch.
+            withContext(NonCancellable) {
+                onboardingRepository.setFirstTime(false)
+            }
+            navRouter.navigateTo(AppNavKey.Home, true)
+        }
+    }
+
+    val currentPageIndex: StateFlow<Int> = savedStateHandle.getStateFlow(KEY_CURRENT_PAGE_INDEX, 0)
+
+    val hapticFeedBackEnabled = launcherBehaviorRepository.hapticFeedBackEnabled
+
+    fun onPageSettled(pageIndex: Int) {
+        savedStateHandle[KEY_CURRENT_PAGE_INDEX] = pageIndex
+    }
+
+    companion object {
+        private const val KEY_CURRENT_PAGE_INDEX = "current_page_index"
+    }
+}

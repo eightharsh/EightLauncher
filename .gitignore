@@ -1,0 +1,53 @@
+# Gradle and Build artifacts
+.gradle/
+build/
+*/build/
+local.properties
+
+# Android specific
+*.iml
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+captures/
+.externalNativeBuild/
+.cxx/
+app/prod/release/
+crash-reports/
+.kotlin/
+
+# IDE - IntelliJ / Android Studio
+.idea/*
+!.idea/icon.svg
+*.iws
+*.ipr
+*.ids
+out/
+.fleet/
+.vs/
+
+# System / OS
+.DS_Store
+Thumbs.db
+
+# Secrets and Configs
+google-services.json
+mock-google-services.json
+fabric.properties
+*-key.jks
+*.keystore
+!debug.keystore
+
+# Temporary / Log files
+*.log
+*.temp
+*.tmp
+
+# AI
+.artifacts
+graphify-out/
+# Local personal release signing material
+.signing/
