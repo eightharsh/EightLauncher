@@ -76,6 +76,12 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.single().outputFileName.set("EightLauncher.apk")
+    }
+}
+
 dependencies {
     implementation(libs.bundles.androidx.core)
     implementation(libs.bundles.compose.ui)
